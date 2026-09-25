@@ -11,21 +11,19 @@ async function listarTodas() {
   return resultado.rows;
 }
 
-async function existeEnHorario(profesional_id, fecha_hora) {
-  const resultado = await pool.query(
-    'SELECT id FROM citas WHERE profesional_id = $1 AND fecha_hora = $2',
-    [profesional_id, fecha_hora]
-  );
-  return resultado.rows.length > 0;
-}
-
-async function guardar({ paciente, profesional_id, fecha_hora }) {
+// Inserta la cita solo si el horario está libre, en una única consulta.
+// La restricción UNIQUE (profesional_id, fecha_hora) hace atómica la
+// verificación: dos peticiones simultáneas no pueden duplicar la cita.
+// Devuelve el id nuevo, o null si el horario ya estaba ocupado.
+async function guardarSiLibre({ paciente, profesional_id, fecha_hora }) {
   const resultado = await pool.query(
     `INSERT INTO citas (paciente, profesional_id, fecha_hora)
-     VALUES ($1, $2, $3) RETURNING id`,
+     VALUES ($1, $2, $3)
+     ON CONFLICT (profesional_id, fecha_hora) DO NOTHING
+     RETURNING id`,
     [paciente, profesional_id, fecha_hora]
   );
-  return resultado.rows[0].id;
+  return resultado.rows.length > 0 ? resultado.rows[0].id : null;
 }
 
-module.exports = { listarTodas, existeEnHorario, guardar };
+module.exports = { listarTodas, guardarSiLibre };

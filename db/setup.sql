@@ -16,7 +16,10 @@ CREATE TABLE citas (
   paciente        TEXT NOT NULL,
   profesional_id  INTEGER NOT NULL REFERENCES profesionales(id),
   fecha_hora      TIMESTAMPTZ NOT NULL,
-  creada_en       TIMESTAMPTZ NOT NULL DEFAULT now()
+  creada_en       TIMESTAMPTZ NOT NULL DEFAULT now(),
+  -- Un profesional no puede tener dos citas a la misma hora; además
+  -- crea el índice que usa el INSERT ... ON CONFLICT del repositorio.
+  CONSTRAINT citas_profesional_hora_uq UNIQUE (profesional_id, fecha_hora)
 );
 
 INSERT INTO profesionales (nombre, especialidad) VALUES

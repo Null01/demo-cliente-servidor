@@ -15,13 +15,9 @@ async function reservarCita(datos) {
   reglas.validarDatosCompletos(datos);
   reglas.validarFechaFutura(datos.fecha_hora);
 
-  const ocupado = await citaRepository.existeEnHorario(
-    datos.profesional_id,
-    datos.fecha_hora
-  );
-  reglas.validarAgendaLibre(ocupado);
+  const id = await citaRepository.guardarSiLibre(datos);
+  reglas.validarAgendaLibre(id === null);
 
-  const id = await citaRepository.guardar(datos);
   return { mensaje: 'Cita creada', id };
 }
 
