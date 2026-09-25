@@ -205,9 +205,10 @@
   <li>En el computador se abre el archivo <code>db/setup.sql</code> con Bloc de notas o VS Code, se selecciona todo el contenido y se copia.</li>
   <li>Se pega el contenido en el editor de Supabase y se presiona el botón <strong>Run</strong>.</li>
   <li>Aparece una advertencia de <em>destructive operation</em>. Es esperada: el script incluye <code>DROP TABLE IF EXISTS</code> para poder re-ejecutarse desde cero. Se confirma con <strong>Run this query</strong>.</li>
-  <li>En el panel inferior debe aparecer una tabla con 2 filas (Carlos Muñoz y María Salazar). Ese resultado confirma que las tablas y los datos quedaron creados.</li>
+  <li>En el panel inferior debe aparecer una fila con <code>profesionales = 0</code> y <code>citas = 0</code>: las tablas quedaron creadas, todavía sin datos.</li>
+  <li>Se repite el proceso con el archivo <code>db/seed.sql</code> (abrir, copiar, pegar en el editor, <strong>Run</strong>; también avisa de una operación destructiva, esperada porque vacía las tablas antes de cargar). Ahora el panel inferior debe mostrar <code>profesionales = 5</code> y <code>citas = 8</code>, y debajo el listado de las 8 citas, entre ellas las de Carlos Muñoz y María Salazar.</li>
 </ol>
-<p>Verificación opcional: en el menú lateral, <strong>Table Editor</strong> debe mostrar las tablas <code>profesionales</code> (3 filas) y <code>citas</code> (2 filas).</p>
+<p>Verificación opcional: en el menú lateral, <strong>Table Editor</strong> debe mostrar las tablas <code>profesionales</code> (5 filas) y <code>citas</code> (8 filas).</p>
 
 <h3>3.3 Copiar la cadena de conexión</h3>
 <ol>

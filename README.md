@@ -75,7 +75,8 @@ demo-cliente-servidor/
 │       ├── citaRepository.js
 │       └── profesionalRepository.js
 ├── public/index.html                # Cliente: byte a byte igual a la Semana 7
-├── db/setup.sql                     # Base de datos: sin cambios
+├── db/setup.sql                     # Esquema (tablas, restricciones, índices)
+├── db/seed.sql                      # Datos por defecto (5 profesionales, 8 citas)
 └── docs/REFACTOR.md                 # Autopsia del refactor
 ```
 

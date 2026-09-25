@@ -49,7 +49,17 @@ Render (cola de peticiones), no Supabase.
 - `SERIAL` reemplazado por `INTEGER GENERATED ALWAYS AS IDENTITY`.
 - Restricción `UNIQUE` con nombre (`citas_profesional_hora_uq`) e índice de listado.
 
-### 1.4 Migraciones para bases ya creadas
+### 1.4 Datos por defecto (`seed.sql`)
+- [`db/seed.sql`](db/seed.sql) carga 5 profesionales y 8 citas. `setup.sql` quedó solo con el esquema
+  (una única fuente de los datos).
+- Vacía las tablas con `TRUNCATE ... RESTART IDENTITY` antes de insertar, por lo que se puede re-ejecutar y deja
+  siempre el mismo estado; **no lo uses en una base con citas reales**.
+- Las fechas son relativas a hoy (siempre a futuro) y el profesional se busca por nombre, no por id, para no
+  depender del orden de inserción. Respeta el `UNIQUE (profesional_id, fecha_hora)`.
+- La guía del blog ([`blog-semana-7.html`](public/blog-semana-7.html)) se actualizó: ahora hay un paso extra
+  (ejecutar `seed.sql`) y las cifras esperadas son 5 profesionales y 8 citas.
+
+### 1.5 Migraciones para bases ya creadas
 `setup.sql` borra las tablas, así que la base existente usa estos scripts (no borran datos):
 
 | Script | Qué hace | Nota |
@@ -146,14 +156,25 @@ En [`public/index.html`](public/index.html), `iniciar()` lanza `salud`, `profesi
 
 Nueva dependencia: `compression`.
 
+## Orden de ejecución de los scripts SQL
+| Situación | Orden |
+|---|---|
+| Base nueva o reiniciable (borra datos) | `setup.sql` → `seed.sql` |
+| Base existente, conservando las citas | (revisar duplicados) → `migracion-01-unique-cita.sql` → `migracion-02-indice-citas.sql`; **no** correr `setup.sql` ni `seed.sql` |
+| Base existente, reiniciando con datos por defecto | migraciones 01 y 02 → `seed.sql`, o directamente `setup.sql` → `seed.sql` |
+
+Nunca ejecutes las migraciones después de `setup.sql`: la 01 falla porque la restricción ya existe.
+
 ## Pasos de despliegue
-1. Ejecutar `db/migracion-01-unique-cita.sql` y `db/migracion-02-indice-citas.sql` en el SQL Editor de Supabase.
+1. Preparar la base según la tabla anterior (las migraciones 01 y 02 si se conservan los datos).
 2. Fusionar/desplegar la rama en Render.
 3. Repetir las 4 pruebas de autocannon de `throughput/note.md` y comparar.
 
 ## Verificación realizada
 Contra un Postgres 15 local (no contra Supabase ni Render):
 - `setup.sql` ejecuta completo; las migraciones aplican sobre el esquema antiguo de `main`.
+- `setup.sql` → `seed.sql` deja 5 profesionales y 8 citas, todas a futuro; `seed.sql` se puede re-ejecutar y también
+  funciona sobre una base migrada.
 - 20 POST simultáneos al mismo horario: **1 × 201, 19 × 409, 1 fila** en la tabla.
 - POST duplicado 409, fecha pasada 400, datos faltantes 400.
 - Paginación: páginas, `X-Hay-Mas`, `desde` inválido (400), límite absurdo (recortado a 100).
