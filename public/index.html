@@ -119,12 +119,16 @@ async function crearCita() {
 (async function iniciar() {
   const estado = document.getElementById("estado-servidor");
   try {
-    const r = await fetch(SERVIDOR + "/api/salud");
-    const s = await r.json();
+    // Las tres consultas son independientes: se lanzan a la vez, así la página
+    // espera un solo viaje de ida y vuelta en lugar de tres en fila.
+    const [respuestaSalud] = await Promise.all([
+      fetch(SERVIDOR + "/api/salud"),
+      cargarProfesionales(),
+      cargarCitas(),
+    ]);
+    const s = await respuestaSalud.json();
     estado.textContent = "Servidor activo · respuesta recibida a las " +
       new Date(s.hora).toLocaleTimeString("es-CO");
-    await cargarProfesionales();
-    await cargarCitas();
   } catch (e) {
     estado.textContent = "No hay conexión con el servidor. Sin él, este cliente no puede hacer nada.";
   }

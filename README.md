@@ -56,7 +56,7 @@ La API es idéntica a la de la Semana 7 (ese es el punto):
 |--------|------|-----------|
 | `GET` | `/api/salud` | `200` |
 | `GET` | `/api/profesionales` | `200` |
-| `GET` | `/api/citas` | `200` |
+| `GET` | `/api/citas` | `200` · `400` si `desde` no es una fecha · admite `?limite=50&pagina=1&desde=<ISO>` (máx. 100 por página; ver cabeceras `X-Pagina`, `X-Limite`, `X-Hay-Mas`) |
 | `POST` | `/api/citas` | `201` · `400` datos/fecha · `409` agenda ocupada |
 
 La diferencia: ahora el dominio lanza errores simbólicos (`FECHA_PASADA`, `AGENDA_OCUPADA`) y la presentación los traduce a códigos HTTP. El dominio nunca supo que existe HTTP.
@@ -93,7 +93,7 @@ En Render no hay que tocar nada: el mismo servicio redespliega este commit autom
 
 ## Nota sobre concurrencia
 
-El refactor conserva deliberadamente la condición de carrera de la Semana 7 (verificar disponibilidad y luego insertar, en dos pasos, sin restricción de unicidad). Las capas organizan responsabilidades; no resuelven concurrencia — la exclusión real se garantiza en el nivel de datos con un índice de unicidad, y ese es un ejercicio de la sesión de la Semana 8.
+La versión de la Semana 7 verificaba disponibilidad y luego insertaba, en dos pasos y sin restricción de unicidad: dos peticiones simultáneas podían duplicar la cita. En la rama de mejoras esto se resuelve donde corresponde, en el nivel de datos: `UNIQUE (profesional_id, fecha_hora)` más un único `INSERT ... ON CONFLICT DO NOTHING`. Las capas organizan responsabilidades; la exclusión la garantiza la base de datos. Las bases ya creadas deben aplicar `db/migracion-01-unique-cita.sql` y `db/migracion-02-indice-citas.sql`.
 
 ## Ruta del curso
 

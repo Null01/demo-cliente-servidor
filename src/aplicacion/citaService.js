@@ -3,12 +3,30 @@ const reglas = require('../dominio/reglasDeAgenda');
 const citaRepository = require('../persistencia/citaRepository');
 const profesionalRepository = require('../persistencia/profesionalRepository');
 
-async function consultarCitas() {
-  return citaRepository.listarTodas();
+async function consultarCitas(parametros) {
+  const paginacion = reglas.normalizarPaginacion(parametros);
+  const { citas, hayMas } = await citaRepository.listar(paginacion);
+  return { citas, pagina: paginacion.pagina, limite: paginacion.limite, hayMas };
 }
 
-async function consultarProfesionales() {
-  return profesionalRepository.listarTodos();
+// El catálogo casi no cambia: se guarda en memoria 60 s. Se cachea la promesa
+// (no el resultado) para que peticiones simultáneas compartan una sola consulta.
+const TTL_PROFESIONALES_MS = 60 * 1000;
+let cacheProfesionales = null;
+
+function consultarProfesionales() {
+  const ahora = Date.now();
+  if (!cacheProfesionales || ahora >= cacheProfesionales.expira) {
+    const entrada = {
+      expira: ahora + TTL_PROFESIONALES_MS,
+      promesa: profesionalRepository.listarTodos().catch((error) => {
+        if (cacheProfesionales === entrada) cacheProfesionales = null; // no cachear fallos
+        throw error;
+      }),
+    };
+    cacheProfesionales = entrada;
+  }
+  return cacheProfesionales.promesa;
 }
 
 async function reservarCita(datos) {
