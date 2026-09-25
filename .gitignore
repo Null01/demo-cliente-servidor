@@ -1,0 +1,22 @@
+# Dependencias
+node_modules/
+
+# Secretos y configuración local (la cadena de Supabase no se versiona)
+.env
+.env.*
+!.env.example
+
+# Sistema operativo
+.DS_Store
+
+# Editores y herramientas locales
+.idea/
+.junie/
+.qodo/
+
+# Artefactos de compilación (informe LaTeX)
+out/
+
+# Logs
+*.log
+npm-debug.log*
