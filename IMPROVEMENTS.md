@@ -1,7 +1,8 @@
 # Mejoras de rendimiento y latencia
 
 Rama: `feature/improvements` · Base: `main` (`820c4e5`)
-Commits: `5dc0312` (reserva atómica + compresión) · `8813b2e` (paginación, caché, pool, cabeceras, CORS, SQL)
+Commits: `5dc0312` (reserva atómica + compresión) · `8813b2e` (paginación, caché, pool, cabeceras, CORS, SQL) ·
+`47affd8` (este documento) · microcaché del listado (ver §3)
 
 Punto de partida: las pruebas de carga de [`throughput/note.md`](throughput/note.md) (autocannon contra Render).
 A 10 conexiones la latencia era ~130 ms; a 500 conexiones subía a 1.3–1.7 s con ~300–370 RPS. Como
@@ -18,6 +19,7 @@ Render (cola de peticiones), no Supabase.
 | Red / transferencia | `compression()` | HTML de 5.3 kB a 2.2 kB (gzip) |
 | Caché | Estáticos con ETag y `max-age=300` | El navegador revalida sin descargar |
 | Caché | Profesionales en memoria 60 s + `Cache-Control` | Cero consultas a la DB en esa ruta |
+| Caché | Microcaché de 3 s para `GET /api/citas`, invalidada al reservar | Cientos de GET comparten una consulta; ~2× de throughput medido en local |
 | API | Paginación de `GET /api/citas` | Respuesta y consulta acotadas |
 | Conexiones | Ajuste del pool de `pg` | Falla rápido bajo carga; no se cae por errores de conexión |
 | Cliente | Carga inicial en paralelo | 1 viaje de ida y vuelta en vez de 3 |
@@ -60,12 +62,23 @@ Render (cola de peticiones), no Supabase.
 
 ## 3. Caché
 - **Estáticos:** `express.static` con `maxAge: '5m'` y ETag (por defecto). El navegador reutiliza o revalida con 304.
-- **`GET /api/profesionales`:** caché en memoria de 60 s en [`citaService.js`](src/aplicacion/citaService.js).
-  Se guarda la promesa, no el resultado, para que peticiones simultáneas compartan una sola consulta; los
-  fallos no se cachean. La respuesta lleva `Cache-Control: public, max-age=60`.
-  Verificado: 5 llamadas simultáneas ejecutan 1 consulta.
-- **Límite conocido:** la caché vive en el proceso. Con Render free (1 instancia) es correcto; se pierde cuando
-  la instancia se duerme o reinicia, lo cual es inocuo porque solo cuesta una consulta.
+- **Módulo común:** [`cacheTTL.js`](src/aplicacion/cacheTTL.js), `crearCacheTTL({ ttlMs, maxEntradas })`.
+  Guarda la promesa (no el resultado), de modo que las peticiones simultáneas a la misma clave comparten una
+  sola carga; los fallos no se cachean; con `ttlMs <= 0` queda desactivada; y acota la memoria descartando la
+  entrada más antigua al llegar a `maxEntradas` (las claves salen de parámetros del usuario).
+- **`GET /api/profesionales`:** caché de 60 s en [`citaService.js`](src/aplicacion/citaService.js) y
+  `Cache-Control: public, max-age=60` hacia el navegador.
+- **`GET /api/citas` (microcaché):** 3 s por combinación `limite|pagina|desde`, hasta 100 combinaciones.
+  `reservarCita` la invalida entera al insertar, así quien reserva ve su cita de inmediato. El navegador
+  no la guarda (`no-store`).
+- **Desactivar/ajustar:** `CACHE_CITAS_MS=0` la apaga; cualquier otro valor cambia el TTL en milisegundos.
+  Sirve para medir con y sin caché.
+- **Límites conocidos:**
+  - La caché vive en el proceso: es correcta con una sola instancia (Render free). Con varias instancias
+    la invalidación no se propaga y el dato puede tener hasta `CACHE_CITAS_MS` de retraso; ahí toca Redis.
+  - Un cambio hecho directamente en la base (SQL Editor) tarda hasta 3 s en verse.
+  - Se pierde al dormirse o reiniciarse la instancia, lo cual es inocuo: cuesta una consulta.
+- **Verificado:** 50 GET simultáneos ejecutan 1 consulta; reservar invalida; cada página tiene su clave.
 
 ## 4. API
 ### Paginación de `GET /api/citas`
@@ -129,6 +142,7 @@ En [`public/index.html`](public/index.html), `iniciar()` lanza `salud`, `profesi
 |---|---|---|---|
 | `CORS_ORIGIN` | No | `*` | Orígenes permitidos para la API |
 | `PG_POOL_MAX` | No | `10` | Tamaño máximo del pool |
+| `CACHE_CITAS_MS` | No | `3000` | TTL de la microcaché del listado; `0` la desactiva |
 
 Nueva dependencia: `compression`.
 
@@ -146,9 +160,24 @@ Contra un Postgres 15 local (no contra Supabase ni Render):
 - Preflight CORS 204 con `Access-Control-Max-Age: 86400`; cabeceras de caché correctas.
 - Caché de profesionales: 5 llamadas simultáneas, 1 consulta; los fallos no se cachean.
 
+- Microcaché, medida en local (Postgres 15, 2 000 citas, `GET /api/citas?limite=100`, autocannon 200 conexiones,
+  8 s, cliente y servidor en la misma máquina):
+
+  | | RPS | Latencia prom. | p97.5 | p99 | Errores |
+  |---|---:|---:|---:|---:|---:|
+  | Sin caché (`CACHE_CITAS_MS=0`) | 4 554 | 43 ms | 47 ms | 49 ms | 0 |
+  | Con caché (3 s) | 9 282 | 21 ms | 36 ms | 39 ms | 0 |
+
+  Solo sirve para comparar la mejora relativa (~2×); no es comparable con las cifras de Render de
+  `throughput/note.md`, que incluyen la red. Con la caché activa, las pruebas sobre `GET /api/citas` miden la
+  caché y no la base de datos: conviene reportar ambas cifras.
+- Integración: leer, reservar y volver a leer muestra la cita nueva de inmediato.
+
 **No verificado:** rendimiento real bajo carga en Render/Supabase.
 
 ## Pendiente
 - Escapar el HTML en el cliente (`innerHTML` con `paciente` y `nombre` permite XSS).
 - Validar `paciente` (vacío o muy largo) en el dominio y luego agregar un `CHECK` en la base.
-- Estrategias con tecnología intermedia (CDN, microcaché); ver la conversación de la sesión.
+- CDN (Cloudflare) delante de Render: requiere dominio propio.
+- Redis: solo si se escala a más de una instancia.
+- Evitar el cold start de Render free (ping externo): pendiente de decisión.

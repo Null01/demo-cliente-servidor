@@ -1,32 +1,30 @@
 // Casos de uso de citas: coordinan las reglas del dominio y los repositorios.
 const reglas = require('../dominio/reglasDeAgenda');
+const { crearCacheTTL } = require('./cacheTTL');
 const citaRepository = require('../persistencia/citaRepository');
 const profesionalRepository = require('../persistencia/profesionalRepository');
 
+// Microcaché del listado: bajo carga, cientos de GET por segundo comparten una
+// sola consulta cada pocos segundos. reservarCita lo invalida al insertar, así
+// quien reserva ve su cita de inmediato. CACHE_CITAS_MS=0 lo desactiva.
+const cacheCitas = crearCacheTTL({
+  ttlMs: process.env.CACHE_CITAS_MS === undefined ? 3000 : Number(process.env.CACHE_CITAS_MS),
+});
+
 async function consultarCitas(parametros) {
   const paginacion = reglas.normalizarPaginacion(parametros);
-  const { citas, hayMas } = await citaRepository.listar(paginacion);
-  return { citas, pagina: paginacion.pagina, limite: paginacion.limite, hayMas };
+  const clave = `${paginacion.limite}|${paginacion.pagina}|${paginacion.desde}`;
+  return cacheCitas.obtener(clave, async () => {
+    const { citas, hayMas } = await citaRepository.listar(paginacion);
+    return { citas, pagina: paginacion.pagina, limite: paginacion.limite, hayMas };
+  });
 }
 
-// El catálogo casi no cambia: se guarda en memoria 60 s. Se cachea la promesa
-// (no el resultado) para que peticiones simultáneas compartan una sola consulta.
-const TTL_PROFESIONALES_MS = 60 * 1000;
-let cacheProfesionales = null;
+// El catálogo casi no cambia: se guarda en memoria 60 s.
+const cacheProfesionales = crearCacheTTL({ ttlMs: 60 * 1000, maxEntradas: 1 });
 
 function consultarProfesionales() {
-  const ahora = Date.now();
-  if (!cacheProfesionales || ahora >= cacheProfesionales.expira) {
-    const entrada = {
-      expira: ahora + TTL_PROFESIONALES_MS,
-      promesa: profesionalRepository.listarTodos().catch((error) => {
-        if (cacheProfesionales === entrada) cacheProfesionales = null; // no cachear fallos
-        throw error;
-      }),
-    };
-    cacheProfesionales = entrada;
-  }
-  return cacheProfesionales.promesa;
+  return cacheProfesionales.obtener('todos', () => profesionalRepository.listarTodos());
 }
 
 async function reservarCita(datos) {
@@ -35,6 +33,7 @@ async function reservarCita(datos) {
 
   const id = await citaRepository.guardarSiLibre(datos);
   reglas.validarAgendaLibre(id === null);
+  cacheCitas.invalidar();
 
   return { mensaje: 'Cita creada', id };
 }
