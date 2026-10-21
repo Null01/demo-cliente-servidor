@@ -10,8 +10,7 @@ Sistema de referencia del curso **Arquitectura de Sistemas I** · Universidad Ce
 [![Deploy](https://img.shields.io/badge/Deploy-Render-46E3B7?logo=render&logoColor=white)](https://render.com)
 
 **[🌐 Demo en vivo](https://eng-demo-citas.onrender.com)** ·
-**[📖 Guía de despliegue](https://eng-demo-citas.onrender.com/blog-semana-7.html)** ·
-**[🔬 Detalle del refactor](docs/REFACTOR.md)**
+**[📖 Guía de despliegue](https://eng-demo-citas.onrender.com/blog-semana-7.html)**
 
 </div>
 
@@ -34,17 +33,17 @@ Reestructuración interna sin cambios en la API ni en el cliente (mismos endpoin
 - **Caché como decorador:** `citaRepositoryConCache.js` envuelve al repositorio; el servicio ya no conoce la caché.
 - **Infraestructura aparte:** `cacheTTL.js` pasó a `src/infraestructura/`.
 - **Respuestas HTTP en presentación:** el mensaje `"Cita creada"` sale del servicio.
-- **Documentación:** diagramas de componentes (flowchart con tipos «…» y `architecture-beta`) y `docs/REFACTOR.md` actualizado.
+- **Documentación:** diagramas de componentes (flowchart con tipos «…» y `architecture-beta`).
 
 ## Comparativo de ramas
 
 Tres versiones del mismo sistema (misma API y misma interfaz web), comparadas a partir de sus ramas **remotas**:
 
 - **`origin/main`: versión sin capas ni refactor.** Es el punto de partida (Semana 7): un único `server.js` con rutas, reglas de negocio, SQL y conexión a la base de datos mezclados.
-- **`origin/refactor/architecture`: versión en n capas con refactor (este trabajo).** Capas con contrato de repositorios, inyección de dependencias en todas las capas, pruebas por capa y mejoras de rendimiento.\*
+- **`origin/refactor/architecture`: versión en n capas con refactor (este trabajo).** Capas con contrato de repositorios, inyección de dependencias en todas las capas, pruebas por capa y mejoras de rendimiento.
 - **`upstream/refactor-dip-di`: versión en n capas con refactor, hecha por el docente** (`ebuitrago/demo-cliente-servidor`, el repositorio original del que se hizo el fork). Aplica DIP y DI sobre la capa de aplicación.
 
-| Aspecto técnico | `origin/main` (sin capas ni refactor) | `origin/refactor/architecture` (refactor propio)\* | `upstream/refactor-dip-di` (refactor del docente) |
+| Aspecto técnico | `origin/main` (sin capas ni refactor) | `origin/refactor/architecture` (refactor propio) | `upstream/refactor-dip-di` (refactor del docente) |
 |---|---|---|---|
 | **Organización** | Un solo archivo, `server.js` (~130 líneas) | `presentacion`, `aplicacion`, `dominio`, `persistencia`, más `contratos`, `infraestructura`, `config` y `app` | `presentacion`, `aplicacion` (con `contratos`), `dominio` y `persistencia` |
 | **Acoplamiento** | Total: HTTP, reglas, SQL y conexión en el mismo archivo | La aplicación solo conoce el contrato `CitaRepository`/`ProfesionalRepository` | La aplicación solo conoce el contrato, pero los repositorios siguen importando el pool global con `require('./db')` |
@@ -65,9 +64,8 @@ Tres versiones del mismo sistema (misma API y misma interfaz web), comparadas a 
 | **Pruebas** | Ninguna | 52 pruebas en 10 archivos, una carpeta por capa; cobertura 100 % de los módulos que cargan | 4 pruebas del servicio con repositorios falsos (`test/citaService.test.js`) |
 | **Scripts npm** | `start` | `start`, `test`, `test:coverage`, `test:junit`, `test:lcov` | `start` |
 | **Versión de Node** | `>=18` | `>=22.5.0` | `>=18` |
-| **Documentación** | `README.md` | README con diagramas de componentes, `docs/REFACTOR.md`, `IMPROVEMENTS.md` y capturas en `screens/` | README, `docs/REFACTOR.md` y una presentación HTML de la Semana 9 |
+| **Documentación** | `README.md` | README con diagramas de componentes y capturas en `screens/` | README, `docs/REFACTOR.md` y una presentación HTML de la Semana 9 |
 
-\* `origin/refactor/architecture` todavía no incluye las pruebas, los scripts npm, el requisito de Node ≥22.5.0 ni las capturas de `screens/`: están en dos commits locales que se subirán junto con esta sección. La fila de pruebas y las de scripts y versión de Node describen la rama con esos commits.
 
 **Lectura rápida:** `origin/main` concentra todo en un archivo y no se puede probar sin base de datos. La rama del docente introduce DIP y DI en la capa de aplicación, el paso mínimo para probar el servicio con repositorios falsos. `origin/refactor/architecture` lleva esa idea hasta la persistencia y la configuración, y agrega pruebas, caché y paginación; por eso cambia más código, pero la API y el cliente siguen igual.
 
@@ -118,8 +116,6 @@ La flecha continua es "usa"; la punteada es "implementa" o "inyecta". Ya no hay 
 | Los códigos HTTP 400/409/500 | `src/presentacion/citasRoutes.js` | El protocolo es asunto de la presentación |
 | El orden de los pasos al reservar | `src/aplicacion/citaService.js` | Coordinar casos de uso es aplicación |
 | `app.listen`, middlewares | `server.js` (arranque y composición) y `src/app.js` (middlewares) | Arranque y cableado |
-
-El análisis completo, con el flujo de una solicitud y el mapa a las diapositivas del curso, está en [`docs/REFACTOR.md`](docs/REFACTOR.md).
 
 ## Arquitectura de componentes (inyección de dependencias)
 
@@ -295,8 +291,7 @@ demo-cliente-servidor/
 │       └── profesionalRepository.js # Implementa ProfesionalRepository
 ├── public/index.html                # Cliente: byte a byte igual a la Semana 7
 ├── db/setup.sql                     # Esquema (tablas, restricciones, índices)
-├── db/seed.sql                      # Datos por defecto (5 profesionales, 8 citas)
-└── docs/REFACTOR.md                 # Autopsia del refactor
+└── db/seed.sql                      # Datos por defecto (5 profesionales, 8 citas)
 ```
 
 ## Ejecución local y despliegue
