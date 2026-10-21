@@ -72,14 +72,15 @@ Render (cola de peticiones), no Supabase.
 
 ## 3. Caché
 - **Estáticos:** `express.static` con `maxAge: '5m'` y ETag (por defecto). El navegador reutiliza o revalida con 304.
-- **Módulo común:** [`cacheTTL.js`](src/aplicacion/cacheTTL.js), `crearCacheTTL({ ttlMs, maxEntradas })`.
+- **Módulo común:** [`cacheTTL.js`](src/infraestructura/cacheTTL.js), `crearCacheTTL({ ttlMs, maxEntradas })`.
   Guarda la promesa (no el resultado), de modo que las peticiones simultáneas a la misma clave comparten una
   sola carga; los fallos no se cachean; con `ttlMs <= 0` queda desactivada; y acota la memoria descartando la
   entrada más antigua al llegar a `maxEntradas` (las claves salen de parámetros del usuario).
-- **`GET /api/profesionales`:** caché de 60 s en [`citaService.js`](src/aplicacion/citaService.js) y
+- **`GET /api/profesionales`:** caché de 60 s en [`profesionalService.js`](src/aplicacion/profesionalService.js) y
   `Cache-Control: public, max-age=60` hacia el navegador.
-- **`GET /api/citas` (microcaché):** 3 s por combinación `limite|pagina|desde`, hasta 100 combinaciones.
-  `reservarCita` la invalida entera al insertar, así quien reserva ve su cita de inmediato. El navegador
+- **`GET /api/citas` (microcaché):** 3 s por combinación `limite|offset|desde`, hasta 100 combinaciones. Vive en el
+  decorador [`citaRepositoryConCache.js`](src/persistencia/citaRepositoryConCache.js), que envuelve al repositorio.
+  `guardarSiLibre` la invalida entera al insertar, así quien reserva ve su cita de inmediato. El navegador
   no la guarda (`no-store`).
 - **Desactivar/ajustar:** `CACHE_CITAS_MS=0` la apaga; cualquier otro valor cambia el TTL en milisegundos.
   Sirve para medir con y sin caché.
@@ -105,7 +106,7 @@ GET /api/citas?limite=50&pagina=1&desde=2026-10-01T00:00:00Z
 - La paginación viaja en cabeceras: `X-Pagina`, `X-Limite`, `X-Hay-Mas`.
 - Se pide `limite + 1` filas para calcular `X-Hay-Mas` sin ejecutar un `COUNT(*)`.
 - Las reglas de normalización viven en el dominio: `normalizarPaginacion` en
-  [`reglasDeAgenda.js`](src/dominio/reglasDeAgenda.js).
+  [`paginacion.js`](src/dominio/paginacion.js).
 
 ## 5. Conexiones (pool de Postgres)
 En [`db.js`](src/persistencia/db.js):
