@@ -36,6 +36,43 @@ Reestructuración interna sin cambios en la API ni en el cliente (mismos endpoin
 - **Respuestas HTTP en presentación:** el mensaje `"Cita creada"` sale del servicio.
 - **Documentación:** diagramas de componentes (flowchart con tipos «…» y `architecture-beta`) y `docs/REFACTOR.md` actualizado.
 
+## Comparativo de ramas
+
+Tres versiones del mismo sistema (misma API y misma interfaz web), comparadas a partir de sus ramas **remotas**:
+
+- **`origin/main`: versión sin capas ni refactor.** Es el punto de partida (Semana 7): un único `server.js` con rutas, reglas de negocio, SQL y conexión a la base de datos mezclados.
+- **`origin/refactor/architecture`: versión en n capas con refactor (este trabajo).** Capas con contrato de repositorios, inyección de dependencias en todas las capas, pruebas por capa y mejoras de rendimiento.\*
+- **`upstream/refactor-dip-di`: versión en n capas con refactor, hecha por el docente** (`ebuitrago/demo-cliente-servidor`, el repositorio original del que se hizo el fork). Aplica DIP y DI sobre la capa de aplicación.
+
+| Aspecto técnico | `origin/main` (sin capas ni refactor) | `origin/refactor/architecture` (refactor propio)\* | `upstream/refactor-dip-di` (refactor del docente) |
+|---|---|---|---|
+| **Organización** | Un solo archivo, `server.js` (~130 líneas) | `presentacion`, `aplicacion`, `dominio`, `persistencia`, más `contratos`, `infraestructura`, `config` y `app` | `presentacion`, `aplicacion` (con `contratos`), `dominio` y `persistencia` |
+| **Acoplamiento** | Total: HTTP, reglas, SQL y conexión en el mismo archivo | La aplicación solo conoce el contrato `CitaRepository`/`ProfesionalRepository` | La aplicación solo conoce el contrato, pero los repositorios siguen importando el pool global con `require('./db')` |
+| **Principio DIP** | No se aplica | Se aplica en servicios, rutas y repositorios | Se aplica en servicio y rutas; la persistencia sigue atada al pool global |
+| **Inyección de dependencias** | Ninguna | Fábricas en todas las capas (`crearCitaService`, `crearCitasRoutes`, `crearCitaRepository(pool)`, `crearPool(config)`) | Fábricas en `citaService` y `citasRoutes` |
+| **Raíz de composición** | No existe; `server.js` hace todo | `server.js` crea pool, repositorios, servicios y app, y los conecta | `server.js` crea el servicio con los repositorios y lo inyecta en las rutas |
+| **Contrato de repositorios** | No existe | `src/contratos/repositorios.js`, verificado al ensamblar cada repositorio y cada servicio | `src/aplicacion/contratos/repositorios.js`, verificado al crear el servicio |
+| **Servicios** | No hay; la lógica está dentro de cada ruta | Un servicio por agregado: `citaService` y `profesionalService` | Un único `citaService` con citas y profesionales |
+| **Reglas de negocio** | Dentro del manejador `POST /api/citas`, con la respuesta HTTP | Módulos puros: `errores.js`, `validacionCita.js` y `paginacion.js`; errores simbólicos que la presentación traduce a HTTP | Módulo puro `reglasDeAgenda.js`; errores simbólicos que la presentación traduce a HTTP |
+| **Reloj** | `new Date()` dentro del manejador | La regla recibe `ahora` (por defecto `new Date()`), pero el servicio no lo pasa | El servicio recibe un `reloj` inyectable y lo pasa a la regla |
+| **Configuración** | `process.env` leído en `server.js` | `config.js` es el único lector del entorno | `process.env` leído en `server.js` y en `db.js` |
+| **Express** | Se crea y arranca en `server.js` | `app.js` crea la app sin abrir puerto; `server.js` la arranca | Se crea y arranca en `server.js` |
+| **Reserva de cita** | Consulta si el horario está ocupado y luego inserta (dos consultas) | Un solo `INSERT … ON CONFLICT DO NOTHING` con restricción `UNIQUE`; atómico | Dos consultas, como `origin/main` |
+| **Listado de citas** | Todas las filas, sin límite | Paginado (`limite`, `pagina`, `desde`) con cabeceras `X-Pagina`, `X-Limite`, `X-Hay-Mas` | Todas las filas, sin límite |
+| **Caché** | No tiene | Microcaché de 3 s como decorador del repositorio, invalidada al reservar | No tiene |
+| **Rendimiento HTTP** | Sin compresión; CORS abierto; pool con valores por defecto | Compresión, cabeceras de caché, CORS configurable y pool afinado | Sin compresión; CORS abierto; pool con valores por defecto |
+| **Base de datos** | `setup.sql` con los datos de ejemplo incluidos | `setup.sql`, dos migraciones, índice de paginación y `seed.sql` | `setup.sql` |
+| **Pruebas** | Ninguna | 52 pruebas en 10 archivos, una carpeta por capa; cobertura 100 % de los módulos que cargan | 4 pruebas del servicio con repositorios falsos (`test/citaService.test.js`) |
+| **Scripts npm** | `start` | `start`, `test`, `test:coverage`, `test:junit`, `test:lcov` | `start` |
+| **Versión de Node** | `>=18` | `>=22.5.0` | `>=18` |
+| **Documentación** | `README.md` | README con diagramas de componentes, `docs/REFACTOR.md`, `IMPROVEMENTS.md` y capturas en `screens/` | README, `docs/REFACTOR.md` y una presentación HTML de la Semana 9 |
+
+\* `origin/refactor/architecture` todavía no incluye las pruebas, los scripts npm, el requisito de Node ≥22.5.0 ni las capturas de `screens/`: están en dos commits locales que se subirán junto con esta sección. La fila de pruebas y las de scripts y versión de Node describen la rama con esos commits.
+
+**Lectura rápida:** `origin/main` concentra todo en un archivo y no se puede probar sin base de datos. La rama del docente introduce DIP y DI en la capa de aplicación, el paso mínimo para probar el servicio con repositorios falsos. `origin/refactor/architecture` lleva esa idea hasta la persistencia y la configuración, y agrega pruebas, caché y paginación; por eso cambia más código, pero la API y el cliente siguen igual.
+
+> El `main` del repositorio original (`upstream/main`, Semana 8) ya separa el servidor en capas, pero sin inyección de dependencias. Es el punto intermedio entre `origin/main` y el refactor del docente, y no figura en la tabla.
+
 ## Arquitectura en capas
 
 ```mermaid
