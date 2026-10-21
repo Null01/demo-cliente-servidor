@@ -1,0 +1,19 @@
+$ mismas peticiones contra refactor/architecture (:3100) y refactor-dip-di del docente (:3101), misma base local de pruebas
+
+== refactor/architecture
+GET  /api/salud               -> 200 {"estado":"ok","servidor":"activo","hora":"2026-10-21T18:27:13.163Z"}
+GET  /api/profesionales       -> 200 [{"id":2,"nombre":"Dr. Andrés Rojas","especialidad":"Odontología"},{"id":4,"nombre":"Dr. Felipe Gómez","especialidad":"Pediatría"},{"id":3,"nombre
+GET  /api/citas               -> 200 [{"id":2,"paciente":"Carlos Muñoz","fecha_hora":"2026-10-22T14:00:00.000Z","profesional":"Dra. Laura Pérez"},{"id":1,"paciente":"Juan Herrera","fech
+POST /api/citas (valida)      -> 201 {"mensaje":"Cita creada","id":14}
+POST /api/citas (repetida)    -> 409 {"error":"Regla del servidor: ese profesional ya tiene una cita a esa hora"}
+POST /api/citas (fecha pasada)-> 400 {"error":"Regla del servidor: no se pueden reservar citas en el pasado"}
+POST /api/citas (sin datos)   -> 400 {"error":"Faltan datos: paciente, profesional y fecha son obligatorios"}
+
+== refactor-dip-di
+GET  /api/salud               -> 200 {"estado":"ok","servidor":"activo","hora":"2026-10-21T18:27:13.284Z"}
+GET  /api/profesionales       -> 200 [{"id":2,"nombre":"Dr. Andrés Rojas","especialidad":"Odontología"},{"id":4,"nombre":"Dr. Felipe Gómez","especialidad":"Pediatría"},{"id":3,"nombre
+GET  /api/citas               -> 200 [{"id":2,"paciente":"Carlos Muñoz","fecha_hora":"2026-10-22T14:00:00.000Z","profesional":"Dra. Laura Pérez"},{"id":1,"paciente":"Juan Herrera","fech
+POST /api/citas (valida)      -> 201 {"mensaje":"Cita creada","id":16}
+POST /api/citas (repetida)    -> 409 {"error":"Regla del servidor: ese profesional ya tiene una cita a esa hora"}
+POST /api/citas (fecha pasada)-> 400 {"error":"Regla del servidor: no se pueden reservar citas en el pasado"}
+POST /api/citas (sin datos)   -> 400 {"error":"Faltan datos: paciente, profesional y fecha son obligatorios"}

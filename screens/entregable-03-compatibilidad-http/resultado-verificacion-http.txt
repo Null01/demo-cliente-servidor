@@ -1,0 +1,12 @@
+$ node server.js   # terminal 1 (lo mismo que npm start), con DATABASE_URL de una base LOCAL de pruebas
+Servidor escuchando en el puerto 3100
+Cliente web: http://localhost:3100
+
+$ BASE_URL=http://localhost:3100 node test/api-smoke.js   # terminal 2
+✔ 1. GET  /api/salud → 200
+✔ 2. GET  /api/profesionales → 200
+✔ 3. GET  /api/citas → 200
+✔ 4. POST /api/citas (reserva válida) → 201
+✔ 5. POST /api/citas (misma reserva, secuencial) → 409
+✔ 6. POST /api/citas (fecha pasada) → 400
+API comprobada: 6 de 6 verificaciones (GET 200, POST 201, 409 y 400).
