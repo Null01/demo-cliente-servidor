@@ -16,13 +16,13 @@ Sistema de referencia del curso **Arquitectura de Sistemas I** · Universidad Ce
 
 ---
 
-Aplicación mínima que demuestra dos vistas complementarias del mismo sistema: la vista **Cliente-Servidor** (quién habla con quién por la red — Semana 7) y la vista **en capas** (cómo se organiza el servidor por dentro — Semana 8). Esta versión es la refactorización en capas del `server.js` original: el comportamiento es idéntico, el cliente y la base de datos no cambiaron ni una línea.
+Aplicación mínima que demuestra dos vistas complementarias del mismo sistema: la vista **Cliente-Servidor** (quién habla con quién por la red — Semana 7) y la vista **en capas** (cómo se organiza el servidor por dentro — Semana 8). Esta versión es la refactorización en capas del `server.js` original: el contrato HTTP (endpoints y códigos) se mantiene. Cambian de forma menor la página web (`public/index.html` pide los datos a la vez) y el esquema de la base de datos (restricción de horario único e índice), y el listado de citas ahora admite paginación.
 
-> **La idea central del refactor:** se reorganizó el interior del servidor sin que nadie afuera lo note. Las capas organizan responsabilidades; no agregan servidores ni cambian el contrato HTTP.
+> **La idea central del refactor:** se reorganizó el interior del servidor sin cambiar los endpoints ni los códigos de respuesta. Las capas organizan responsabilidades; no agregan servidores.
 
 ## Mejoras en la rama `refactor/architecture`
 
-Reestructuración interna sin cambios en la API ni en el cliente (mismos endpoints, códigos y respuestas):
+Reestructuración interna con los mismos endpoints, códigos y mensajes de respuesta (el listado de citas agrega paginación opcional):
 
 - **Contrato de repositorios** (`contratos/repositorios.js`): la aplicación depende de interfaces (`CitaRepository`, `ProfesionalRepository`), verificadas al arrancar, y no de PostgreSQL.
 - **Inyección de dependencias:** los repositorios, servicios y rutas son fábricas; `server.js` es la raíz de composición que los crea y conecta.
@@ -37,7 +37,7 @@ Reestructuración interna sin cambios en la API ni en el cliente (mismos endpoin
 
 ## Comparativo de ramas
 
-Tres versiones del mismo sistema (misma API y misma interfaz web), comparadas a partir de sus ramas **remotas**:
+Tres versiones del mismo sistema (mismos endpoints y códigos de respuesta), comparadas a partir de sus ramas **remotas**:
 
 - **`origin/main`: versión sin capas ni refactor.** Es el punto de partida (Semana 7): un único `server.js` con rutas, reglas de negocio, SQL y conexión a la base de datos mezclados.
 - **`origin/refactor/architecture`: versión en n capas con refactor (este trabajo).** Capas con contrato de repositorios, inyección de dependencias en todas las capas, pruebas por capa y mejoras de rendimiento.
@@ -66,8 +66,7 @@ Tres versiones del mismo sistema (misma API y misma interfaz web), comparadas a 
 | **Versión de Node** | `>=18` | `>=22.5.0` | `>=18` |
 | **Documentación** | `README.md` | README con diagramas de componentes y capturas en `screens/` | README, `docs/REFACTOR.md` y una presentación HTML de la Semana 9 |
 
-
-**Lectura rápida:** `origin/main` concentra todo en un archivo y no se puede probar sin base de datos. La rama del docente introduce DIP y DI en la capa de aplicación, el paso mínimo para probar el servicio con repositorios falsos. `origin/refactor/architecture` lleva esa idea hasta la persistencia y la configuración, y agrega pruebas, caché y paginación; por eso cambia más código, pero la API y el cliente siguen igual.
+**Lectura rápida:** `origin/main` concentra todo en un archivo y no se puede probar sin base de datos. La rama del docente introduce DIP y DI en la capa de aplicación, el paso mínimo para probar el servicio con repositorios falsos. `origin/refactor/architecture` lleva esa idea hasta la persistencia y la configuración, y agrega pruebas, caché y paginación; por eso cambia más código, pero los endpoints y los códigos de respuesta siguen igual.
 
 > El `main` del repositorio original (`upstream/main`, Semana 8) ya separa el servidor en capas, pero sin inyección de dependencias. Es el punto intermedio entre `origin/main` y el refactor del docente, y no figura en la tabla.
 
@@ -75,16 +74,16 @@ Tres versiones del mismo sistema (misma API y misma interfaz web), comparadas a 
 
 ```mermaid
 flowchart TB
-    C["🖥️ Cliente web<br/>public/index.html — sin cambios"] -- "HTTP · JSON" --> P
+    C["🖥️ Cliente web<br/>public/index.html"] -- "HTTP · JSON" --> P
     subgraph S["⚙️ Servidor Express en Render — server.js solo cablea"]
         P["Presentación<br/>src/presentacion/citasRoutes.js"] --> A["Aplicación<br/>src/aplicacion/citaService.js"]
         A --> D["Dominio<br/>src/dominio/reglasDeAgenda.js<br/>(reglas puras, cero dependencias)"]
         A --> R["Persistencia<br/>src/persistencia/*Repository.js"]
     end
-    R -- "SQL · SSL" --> PG[("🗄️ PostgreSQL<br/>Supabase — sin cambios")]
+    R -- "SQL · SSL" --> PG[("🗄️ PostgreSQL<br/>Supabase")]
 ```
 
-La dirección de las flechas es la regla: las dependencias apuntan hacia adentro/abajo. El dominio no importa nada (`grep require src/dominio/*` devuelve cero resultados) — por eso sus reglas se pueden probar aisladas y sobrevivirían a un cambio de framework o de base de datos.
+La dirección de las flechas es la regla: las dependencias apuntan hacia adentro/abajo. El dominio solo importa módulos del propio dominio (`errores.js`), nunca Express ni PostgreSQL — por eso sus reglas se pueden probar aisladas y sobrevivirían a un cambio de framework o de base de datos.
 
 ### Arquitectura en capas — versión con contrato de repositorios
 
@@ -92,7 +91,7 @@ El diagrama anterior muestra la Semana 8, donde la aplicación llamaba directame
 
 ```mermaid
 flowchart TB
-    C["🖥️ Cliente web<br/>public/index.html — sin cambios"] -- "HTTP · JSON" --> P
+    C["🖥️ Cliente web<br/>public/index.html"] -- "HTTP · JSON" --> P
     subgraph S["⚙️ Servidor Express en Render"]
         P["Presentación<br/>src/presentacion/citasRoutes.js"] --> A["Aplicación<br/>src/aplicacion/citaService.js"]
         A --> D["Dominio<br/>src/dominio/*.js<br/>(reglas puras, sin dependencias externas)"]
@@ -102,7 +101,7 @@ flowchart TB
         W -. "inyecta" .-> A
         W -. "inyecta" .-> P
     end
-    R -- "SQL · SSL" --> PG[("🗄️ PostgreSQL<br/>Supabase — sin cambios")]
+    R -- "SQL · SSL" --> PG[("🗄️ PostgreSQL<br/>Supabase")]
 ```
 
 La flecha continua es "usa"; la punteada es "implementa" o "inyecta". Ya no hay flecha de Aplicación a Persistencia: la aplicación solo conoce el contrato.
@@ -253,9 +252,9 @@ architecture-beta
     db:B --> T:pg
 ```
 
-## API — sin cambios
+## API
 
-La API es idéntica a la de la Semana 7 (ese es el punto):
+Mismos endpoints y códigos que la Semana 7; el listado de citas agrega paginación opcional:
 
 | Método | Ruta | Respuestas |
 |--------|------|-----------|
@@ -289,22 +288,22 @@ demo-cliente-servidor/
 │       ├── citaRepository.js        # Implementa CitaRepository
 │       ├── citaRepositoryConCache.js # Decorador de CitaRepository: microcaché
 │       └── profesionalRepository.js # Implementa ProfesionalRepository
-├── public/index.html                # Cliente: byte a byte igual a la Semana 7
+├── public/index.html                # Cliente web
 ├── db/setup.sql                     # Esquema (tablas, restricciones, índices)
 └── db/seed.sql                      # Datos por defecto (5 profesionales, 8 citas)
 ```
 
 ## Ejecución local y despliegue
 
-Idénticos a la Semana 7 — nada del despliegue cambió con el refactor:
+Igual que en la Semana 7, con dos diferencias: requiere Node 22.5 o superior y las bases ya creadas aplican las migraciones de `db/`:
 
 ```bash
 npm install
-cp .env.example .env     # cadena del Transaction pooler de Supabase
+echo 'DATABASE_URL=<cadena del Transaction pooler de Supabase>' > .env
 npm start                # → http://localhost:3000
 ```
 
-En Render no hay que tocar nada: el mismo servicio redespliega este commit automáticamente y sigue funcionando igual. Guía completa: [blog de despliegue](https://eng-demo-citas.onrender.com/blog-semana-7.html).
+En Render hay que confirmar que el servicio use Node 22.5 o superior antes de redesplegar. Guía completa: [blog de despliegue](https://eng-demo-citas.onrender.com/blog-semana-7.html).
 
 ## Nota sobre concurrencia
 
@@ -315,8 +314,8 @@ La versión de la Semana 7 verificaba disponibilidad y luego insertaba, en dos p
 | Semana | Tema | Este repositorio |
 |--------|------|------------------|
 | **7** | Vista Cliente-Servidor | ✅ `server.js` plano + despliegue ([ver commit inicial](../../commits/main)) |
-| **8** | Arquitectura en Capas | ✅ Versión actual: refactor en `src/` — mismo comportamiento |
-| **9** | Reglas de dependencia | 🔜 DIP · patrón Repository · inyección de dependencias |
+| **8** | Arquitectura en Capas | ✅ Refactor en `src/` — mismos endpoints y códigos |
+| **9** | Reglas de dependencia | ✅ Versión actual: DIP · contrato de repositorios · inyección de dependencias · pruebas |
 
 El diff entre las dos primeras semanas se lee en el historial de commits: en rojo el archivo único, en verde las capas.
 
