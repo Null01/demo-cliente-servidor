@@ -1,0 +1,47 @@
+%%{init:{"theme":"base","flowchart":{"curve":"basis","nodeSpacing":40,"rankSpacing":70,"htmlLabels":true},"themeVariables":{"fontFamily":"Helvetica, Arial","fontSize":"15px","primaryColor":"#ffffff","primaryBorderColor":"#44546a","lineColor":"#44546a","clusterBkg":"#f6f8fb","clusterBorder":"#b8c4d6"}}}%%
+flowchart TB
+  subgraph ARR["Arranque (arma todo)"]
+    server["«artifact»<br/><b>server.js</b><br/><i>arma y conecta</i>"]
+  end
+  subgraph PRE["Presentación"]
+    routes["«artifact»<br/><b>citasRoutes.js</b><br/><i>recibe el servicio ya armado</i>"]
+  end
+  subgraph APL["Aplicación"]
+    service["«artifact»<br/><b>citaService.js</b><br/><i>recibe los repositorios</i>"]
+    contrato["«artifact»<br/><b>contratos/repositorios.js</b><br/><i>qué debe saber hacer un repositorio</i>"]
+  end
+  subgraph DOM["Dominio"]
+    reglas["«artifact»<br/><b>reglasDeAgenda.js</b><br/><i>dominio puro</i>"]
+  end
+  subgraph PER["Persistencia"]
+    citaRepo["«artifact»<br/><b>citaRepository.js</b><br/><i>habla con PostgreSQL</i>"]
+    profRepo["«artifact»<br/><b>profesionalRepository.js</b><br/><i>habla con PostgreSQL</i>"]
+    db["«artifact»<br/><b>db.js</b><br/><i>pool pg</i>"]
+  end
+  pg(["«library»<br/>pg"])
+  server -.->|"«use»"| routes
+  server -.->|"«use»"| service
+  server -.->|"«use»"| citaRepo
+  server -.->|"«use»"| profRepo
+  routes -.->|"«use»"| reglas
+  service -.->|"«use»"| reglas
+  service -.->|"«use»"| contrato
+  routes -.->|"«use» (lo recibe armado)"| service
+  service -.->|"«use» (lo recibe armado)"| citaRepo
+  citaRepo -.->|"«use»"| db
+  profRepo -.->|"«use»"| db
+  db -.->|"«use»"| pg
+  linkStyle 0 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 1 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 2 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 3 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 4 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 5 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 6 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 7 stroke:#1a9850,stroke-width:2.4px,color:#1a9850
+  linkStyle 8 stroke:#1a9850,stroke-width:2.4px,color:#1a9850
+  linkStyle 9 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 10 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 11 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  classDef ext fill:#eef2f7,stroke:#8a99ad,stroke-dasharray:2 2
+  class pg ext

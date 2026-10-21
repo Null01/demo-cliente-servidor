@@ -1,0 +1,22 @@
+%%{init:{"theme":"base","flowchart":{"curve":"basis","nodeSpacing":40,"rankSpacing":70,"htmlLabels":true},"themeVariables":{"fontFamily":"Helvetica, Arial","fontSize":"15px","primaryColor":"#ffffff","primaryBorderColor":"#44546a","lineColor":"#44546a","clusterBkg":"#f6f8fb","clusterBorder":"#b8c4d6"}}}%%
+flowchart TB
+  subgraph ARR["Todo en un archivo"]
+    server["«artifact»<br/><b>server.js</b><br/><i>rutas + reglas + SQL + conexión</i>"]
+  end
+  express(["«library»<br/>express"])
+  cors(["«library»<br/>cors"])
+  pg(["«library»<br/>pg"])
+  dotenv(["«library»<br/>dotenv"])
+  server -.->|"«use»"| express
+  server -.->|"«use»"| cors
+  server -.->|"«use»"| pg
+  server -.->|"«use»"| dotenv
+  linkStyle 0 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 1 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 2 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 3 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  classDef ext fill:#eef2f7,stroke:#8a99ad,stroke-dasharray:2 2
+  class express ext
+  class cors ext
+  class pg ext
+  class dotenv ext

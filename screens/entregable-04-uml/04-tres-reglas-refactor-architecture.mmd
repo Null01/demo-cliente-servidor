@@ -1,0 +1,14 @@
+%%{init:{"theme":"base","flowchart":{"curve":"basis","nodeSpacing":90,"rankSpacing":110,"htmlLabels":true},"themeVariables":{"fontFamily":"Helvetica, Arial","fontSize":"17px","primaryColor":"#ffffff","primaryBorderColor":"#44546a","lineColor":"#44546a"}}}%%
+flowchart TB
+  server["<b>server.js</b><br/><i>arranque: arma todo</i>"]
+  servicio["<b>citaService.js</b><br/><i>servicio de citas</i>"]
+  repo["<b>citaRepository.js</b><br/><i>habla con la base de datos</i>"]
+  reglas["<b>validacionCita.js</b><br/><i>reglas de validación</i>"]
+  server -.->|"R3 · el arranque sí lo usa"| repo
+  server -.->|"le entrega el repositorio"| servicio
+  servicio -.->|"R1 · PERMITIDA"| reglas
+  servicio -.->|"R2 · ELIMINADA: ya no lo usa directamente"| repo
+  linkStyle 0 stroke:#2563eb,stroke-width:2.6px,color:#2563eb
+  linkStyle 1 stroke:#1a9850,stroke-width:2.6px,color:#1a9850
+  linkStyle 2 stroke:#44546a,stroke-width:2.6px,color:#1f2a37
+  linkStyle 3 stroke:#d73027,stroke-width:2.6px,color:#d73027

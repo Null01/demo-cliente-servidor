@@ -1,0 +1,86 @@
+%%{init:{"theme":"base","flowchart":{"curve":"basis","nodeSpacing":40,"rankSpacing":70,"htmlLabels":true},"themeVariables":{"fontFamily":"Helvetica, Arial","fontSize":"15px","primaryColor":"#ffffff","primaryBorderColor":"#44546a","lineColor":"#44546a","clusterBkg":"#f6f8fb","clusterBorder":"#b8c4d6"}}}%%
+flowchart TB
+  subgraph ARR["Arranque (arma todo)"]
+    server["«artifact»<br/><b>server.js</b><br/><i>arma y conecta</i>"]
+    config["«artifact»<br/><b>config.js</b><br/><i>único lector de .env</i>"]
+    app["«artifact»<br/><b>app.js</b><br/><i>Express sin puerto</i>"]
+  end
+  subgraph PRE["Presentación"]
+    routes["«artifact»<br/><b>citasRoutes.js</b><br/><i>recibe los servicios ya armados</i>"]
+  end
+  subgraph APL["Aplicación"]
+    citaSvc["«artifact»<br/><b>citaService.js</b><br/><i>recibe su repositorio</i>"]
+    profSvc["«artifact»<br/><b>profesionalService.js</b><br/><i>recibe su repositorio</i>"]
+    contrato["«artifact»<br/><b>contratos/repositorios.js</b><br/><i>qué debe saber hacer un repositorio</i>"]
+  end
+  subgraph DOM["Dominio"]
+    valid["«artifact»<br/><b>validacionCita.js</b><br/><i>reglas puras</i>"]
+    pagin["«artifact»<br/><b>paginacion.js</b><br/><i>reglas puras</i>"]
+    errores["«artifact»<br/><b>errores.js</b><br/><i>ErrorDeNegocio</i>"]
+  end
+  subgraph INF["Infraestructura"]
+    cache["«artifact»<br/><b>cacheTTL.js</b><br/><i>caché con vencimiento</i>"]
+  end
+  subgraph PER["Persistencia"]
+    citaRepo["«artifact»<br/><b>citaRepository.js</b><br/><i>habla con PostgreSQL</i>"]
+    conCache["«artifact»<br/><b>citaRepositoryConCache.js</b><br/><i>agrega caché al repositorio</i>"]
+    profRepo["«artifact»<br/><b>profesionalRepository.js</b><br/><i>habla con PostgreSQL</i>"]
+    db["«artifact»<br/><b>db.js</b><br/><i>crearPool(config)</i>"]
+  end
+  pg(["«library»<br/>pg"])
+  server -.->|"«use»"| config
+  server -.->|"«use»"| app
+  server -.->|"«use»"| citaSvc
+  server -.->|"«use»"| profSvc
+  server -.->|"«use»"| conCache
+  server -.->|"«use»"| citaRepo
+  server -.->|"«use»"| profRepo
+  server -.->|"«use»"| db
+  app -.->|"«use»"| routes
+  routes -.->|"«use»"| errores
+  routes -.->|"«use» (lo recibe armado)"| citaSvc
+  routes -.->|"«use» (lo recibe armado)"| profSvc
+  citaSvc -.->|"«use»"| valid
+  citaSvc -.->|"«use»"| pagin
+  citaSvc -.->|"«use»"| contrato
+  profSvc -.->|"«use»"| contrato
+  profSvc -.->|"«use»"| cache
+  valid -.->|"«use»"| errores
+  pagin -.->|"«use»"| errores
+  citaRepo -.->|"«use»"| contrato
+  conCache -.->|"«use»"| contrato
+  profRepo -.->|"«use»"| contrato
+  conCache -.->|"«use»"| cache
+  citaSvc -.->|"«use» (lo recibe armado)"| conCache
+  conCache -.->|"«use» (lo recibe armado)"| citaRepo
+  profSvc -.->|"«use» (lo recibe armado)"| profRepo
+  db -.->|"«use»"| pg
+  linkStyle 0 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 1 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 2 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 3 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 4 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 5 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 6 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 7 stroke:#2563eb,stroke-width:2.4px,color:#2563eb
+  linkStyle 8 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 9 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 10 stroke:#1a9850,stroke-width:2.4px,color:#1a9850
+  linkStyle 11 stroke:#1a9850,stroke-width:2.4px,color:#1a9850
+  linkStyle 12 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 13 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 14 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 15 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 16 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 17 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 18 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 19 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 20 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 21 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 22 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  linkStyle 23 stroke:#1a9850,stroke-width:2.4px,color:#1a9850
+  linkStyle 24 stroke:#1a9850,stroke-width:2.4px,color:#1a9850
+  linkStyle 25 stroke:#1a9850,stroke-width:2.4px,color:#1a9850
+  linkStyle 26 stroke:#44546a,stroke-width:1.6px,color:#44546a
+  classDef ext fill:#eef2f7,stroke:#8a99ad,stroke-dasharray:2 2
+  class pg ext
