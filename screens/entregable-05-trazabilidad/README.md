@@ -16,6 +16,10 @@ Rama [`refactor/architecture`](https://github.com/Null01/demo-cliente-servidor/t
 | 04 · Diagramas | [`1f252be`](https://github.com/Null01/demo-cliente-servidor/commit/1f252be) | Diagramas por rama y reglas explicadas |
 | Apoyo | [`849b584`](https://github.com/Null01/demo-cliente-servidor/commit/849b584) | Cuadro comparativo de ramas en el README |
 | Apoyo | [`26ad30c`](https://github.com/Null01/demo-cliente-servidor/commit/26ad30c) | Documentación de la arquitectura |
+| Apoyo | [`d2c1b34`](https://github.com/Null01/demo-cliente-servidor/commit/d2c1b34) | README sin referencias a documentos solo locales |
+| Apoyo | [`68c3632`](https://github.com/Null01/demo-cliente-servidor/commit/68c3632) | `IMPROVEMENTS.md` y `docs/` dejan de rastrearse |
+| 05 · Trazabilidad | [`5b8ce68`](https://github.com/Null01/demo-cliente-servidor/commit/5b8ce68) | Este entregable |
+| Apoyo | [`3abe625`](https://github.com/Null01/demo-cliente-servidor/commit/3abe625) | README con afirmaciones corregidas sobre cliente, API y despliegue |
 
 ![Historial de commits](01-historial-de-commits.png)
 
