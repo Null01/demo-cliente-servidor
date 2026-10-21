@@ -1,11 +1,15 @@
-// Acceso a datos del catálogo de profesionales.
-const pool = require('./db');
+// Adaptador PostgreSQL del contrato ProfesionalRepository.
+const { verificarContrato } = require('../contratos/repositorios');
 
-async function listarTodos() {
-  const resultado = await pool.query(
-    'SELECT id, nombre, especialidad FROM profesionales ORDER BY nombre'
-  );
-  return resultado.rows;
+function crearProfesionalRepository(pool) {
+  async function listarTodos() {
+    const resultado = await pool.query(
+      'SELECT id, nombre, especialidad FROM profesionales ORDER BY nombre'
+    );
+    return resultado.rows;
+  }
+
+  return verificarContrato('ProfesionalRepository', { listarTodos });
 }
 
-module.exports = { listarTodos };
+module.exports = { crearProfesionalRepository };

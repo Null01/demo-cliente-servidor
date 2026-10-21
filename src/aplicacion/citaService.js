@@ -1,41 +1,31 @@
-// Casos de uso de citas: coordinan las reglas del dominio y los repositorios.
-const reglas = require('../dominio/reglasDeAgenda');
-const { crearCacheTTL } = require('./cacheTTL');
-const citaRepository = require('../persistencia/citaRepository');
-const profesionalRepository = require('../persistencia/profesionalRepository');
+// Casos de uso de citas: coordinan las reglas del dominio y el repositorio.
+// Depende del contrato CitaRepository, no de PostgreSQL ni de ningún caché:
+// la implementación llega inyectada, así que aquí se pueden usar repositorios
+// falsos en pruebas.
+const validacion = require('../dominio/validacionCita');
+const { normalizarPaginacion } = require('../dominio/paginacion');
+const { verificarContrato } = require('../contratos/repositorios');
 
-// Microcaché del listado: bajo carga, cientos de GET por segundo comparten una
-// sola consulta cada pocos segundos. reservarCita lo invalida al insertar, así
-// quien reserva ve su cita de inmediato. CACHE_CITAS_MS=0 lo desactiva.
-const cacheCitas = crearCacheTTL({
-  ttlMs: process.env.CACHE_CITAS_MS === undefined ? 3000 : Number(process.env.CACHE_CITAS_MS),
-});
+function crearCitaService({ citaRepository }) {
+  verificarContrato('CitaRepository', citaRepository);
 
-async function consultarCitas(parametros) {
-  const paginacion = reglas.normalizarPaginacion(parametros);
-  const clave = `${paginacion.limite}|${paginacion.pagina}|${paginacion.desde}`;
-  return cacheCitas.obtener(clave, async () => {
+  async function consultarCitas(parametros) {
+    const paginacion = normalizarPaginacion(parametros);
     const { citas, hayMas } = await citaRepository.listar(paginacion);
     return { citas, pagina: paginacion.pagina, limite: paginacion.limite, hayMas };
-  });
+  }
+
+  async function reservarCita(datos) {
+    validacion.validarDatosCompletos(datos);
+    validacion.validarFechaFutura(datos.fecha_hora);
+
+    const id = await citaRepository.guardarSiLibre(datos);
+    validacion.validarAgendaLibre(id === null);
+
+    return { id };
+  }
+
+  return { consultarCitas, reservarCita };
 }
 
-// El catálogo casi no cambia: se guarda en memoria 60 s.
-const cacheProfesionales = crearCacheTTL({ ttlMs: 60 * 1000, maxEntradas: 1 });
-
-function consultarProfesionales() {
-  return cacheProfesionales.obtener('todos', () => profesionalRepository.listarTodos());
-}
-
-async function reservarCita(datos) {
-  reglas.validarDatosCompletos(datos);
-  reglas.validarFechaFutura(datos.fecha_hora);
-
-  const id = await citaRepository.guardarSiLibre(datos);
-  reglas.validarAgendaLibre(id === null);
-  cacheCitas.invalidar();
-
-  return { mensaje: 'Cita creada', id };
-}
-
-module.exports = { consultarCitas, consultarProfesionales, reservarCita };
+module.exports = { crearCitaService };
