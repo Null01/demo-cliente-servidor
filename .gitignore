@@ -23,3 +23,7 @@ npm-debug.log*
 
 # Reportes de pruebas generados
 reports/
+
+# Documentos solo locales
+IMPROVEMENTS.md
+docs/
